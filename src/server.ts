@@ -3,6 +3,7 @@ import logger from "morgan";
 import helmet from "helmet";
 import httpProxy from "express-http-proxy";
 import { services } from "../config";
+import cors from "cors";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -18,6 +19,7 @@ const { services } = load(readConfig, { json: true });
 
 const app = express();
 
+app.use(cors({ origin: "*" }));
 app.use(logger("dev"));
 app.use(helmet());
 app.use(express.json());
