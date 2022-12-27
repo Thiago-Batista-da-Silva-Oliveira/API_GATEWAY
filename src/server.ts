@@ -1,10 +1,12 @@
 import express from "express";
 import logger from "morgan";
 import helmet from "helmet";
-import httpProxy from "express-http-proxy";
 import { services } from "../config";
 import cors from "cors";
 import * as dotenv from "dotenv";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import { ensureAuthenticated } from "./authMiddleware";
+
 dotenv.config();
 
 /*
@@ -22,15 +24,32 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(logger("dev"));
 app.use(helmet());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 app.get("/", (req, res) => {
   return res.json({ message: "Running application" });
 });
 
+app.use(
+  "/session",
+  createProxyMiddleware({
+    target: process.env.AUTH_PATH,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/session/": "/",
+    },
+  })
+);
+
 services.forEach(({ name, url }) => {
-  app.use(`/${name}`, httpProxy(url, { timeout: 3000 }));
+  const rewriteFn = function (path) {
+    return path.replace(`${name}`, "/");
+  };
+
+  const options = {
+    target: url,
+    changeOrigin: true,
+    pathRewrite: rewriteFn,
+  };
+  app.use(`/${name}`, ensureAuthenticated, createProxyMiddleware(options));
 });
 
 app.listen(3332, () => console.log("server is running"));
