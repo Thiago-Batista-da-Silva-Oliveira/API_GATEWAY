@@ -1,0 +1,5 @@
+services:
+ - name: app
+   url: http://localhost:3333
+ - name: notifications
+   url: http://localhost:3337
